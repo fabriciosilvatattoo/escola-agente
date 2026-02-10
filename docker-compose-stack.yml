@@ -1,0 +1,28 @@
+version: '3.3'
+
+services:
+  escola-agente:
+    image: escola-agente:latest
+    networks:
+      - InsnNet
+    environment:
+      - GLM_API_KEY=3426673eebda4070a78bf8bbbf53509d.m87S46cq1QO6P8Qj
+      - GLM_API_URL=https://api.z.ai/api/coding/paas/v4
+      - PORT=3000
+    deploy:
+      mode: replicated
+      replicas: 1
+      labels:
+        - "traefik.enable=true"
+        - "traefik.http.routers.escola-agente.rule=Host(`escola.insn.online`)"
+        - "traefik.http.routers.escola-agente.entrypoints=websecure"
+        - "traefik.http.routers.escola-agente.tls.certresolver=letsencryptresolver"
+        - "traefik.http.services.escola-agente.loadbalancer.server.port=3000"
+    ports:
+      - target: 3000
+        published: 8889
+        mode: host
+
+networks:
+  InsnNet:
+    external: true
