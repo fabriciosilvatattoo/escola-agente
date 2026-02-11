@@ -16,12 +16,12 @@ function App() {
 
         <Route
           path="/dashboard"
-          element={isAuthenticated() ? <Chat /> : <Navigate to="/login" />}
+          element={<Chat />}
         />
 
         <Route
           path="/"
-          element={<Navigate to={isAuthenticated() ? "/dashboard" : "/login"} />}
+          element={<Navigate to="/dashboard" />}
         />
       </Routes>
     </BrowserRouter>
