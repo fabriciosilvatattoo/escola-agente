@@ -1,34 +1,34 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
+import './App.css'; // Carrega o tema dark
 
 function Layout() {
     return (
-        <div style={styles.container}>
-            <div style={styles.sidebar}>
-                <Sidebar />
-            </div>
-            <div style={styles.content}>
+        <div className="layout" style={styles.layout}>
+            <Sidebar />
+            <main className="main-content" style={styles.content}>
                 <Outlet />
-            </div>
+            </main>
         </div>
     );
 }
 
 const styles = {
-    container: {
+    layout: {
         display: 'flex',
         minHeight: '100vh',
-        width: '100%',
-    },
-    sidebar: {
-        width: '250px',
-        flexShrink: 0,
+        width: '100vw',
+        backgroundColor: 'var(--bg-primary)',
+        color: 'var(--text-primary)',
     },
     content: {
         flex: 1,
-        padding: '40px',
-        background: '#f5f7fa',
+        marginLeft: '280px',
+        padding: '40px 60px',
         overflowY: 'auto',
+        /* Efeito de profundidade para o content */
+        backgroundColor: 'var(--bg-primary)',
+        backgroundImage: `radial-gradient(circle at top right, rgba(139, 92, 246, 0.05), transparent 40%)`
     },
 };
 
