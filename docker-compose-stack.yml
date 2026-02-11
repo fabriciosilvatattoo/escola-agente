@@ -8,6 +8,12 @@ services:
     environment:
       - GLM_API_KEY=3426673eebda4070a78bf8bbbf53509d.m87S46cq1QO6P8Qj
       - GLM_API_URL=https://api.z.ai/api/coding/paas/v4
+      - JWT_SECRET=escola-nexus-secret-2026
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=escola
+      - DB_USER=postgres
+      - DB_PASSWORD=9c178312ab630fab4c92fd2c7aaff71f
       - PORT=3000
     deploy:
       mode: replicated
