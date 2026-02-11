@@ -1,131 +1,77 @@
 import { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
+import { ArrowLeft, CheckCircle } from 'lucide-react';
 
-function LessonPlayer() {
+export default function LessonPlayer() {
     const { id } = useParams();
     const [lesson, setLesson] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
     useEffect(() => {
-        const token = localStorage.getItem('token');
-        fetch(`/api/lessons/${id}`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao buscar aula');
-                return res.json();
-            })
-            .then(data => {
-                setLesson(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setError('Erro ao carregar aula.');
-                setLoading(false);
-            });
+        fetch(`/api/lessons/${id}`)
+            .then(res => res.json())
+            .then(data => { setLesson(data); setLoading(false); })
+            .catch(() => setLoading(false));
     }, [id]);
 
-    if (loading) return <div style={styles.centered}>Carregando aula...</div>;
-    if (error) return <div style={styles.error}>{error}</div>;
+    if (loading) return <div style={styles.loading}>Carregando aula...</div>;
+    if (!lesson) return <div style={styles.loading}>Aula não encontrada</div>;
 
     return (
         <div style={styles.container}>
-            <Link to={`/modules/${lesson.module_id}`} style={styles.backLink}>← Voltar para o Módulo</Link>
+            <Link to={`/modules/${lesson.module_id}`} style={styles.back}>
+                <ArrowLeft size={16} /> Voltar ao módulo
+            </Link>
 
-            <div style={styles.videoContainer}>
-                {lesson.video_url && (
+            {lesson.video_url && (
+                <div style={styles.videoWrap}>
                     <iframe
-                        width="100%"
-                        height="500"
-                        src={lesson.video_url}
-                        title={lesson.title}
-                        frameBorder="0"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                        style={styles.iframe}
-                    ></iframe>
-                )}
-            </div>
+                        width="100%" height="480" src={lesson.video_url} title={lesson.title}
+                        frameBorder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen style={{ display: 'block', borderRadius: '12px' }}
+                    />
+                </div>
+            )}
 
             <div style={styles.content}>
                 <h1 style={styles.title}>{lesson.title}</h1>
                 <div style={styles.text}>
-                    {lesson.content.split('\n').map((line, i) => (
-                        <p key={i}>{line}</p>
+                    {lesson.content?.split('\n').map((line, i) => (
+                        <p key={i} style={{ marginBottom: '12px' }}>{line}</p>
                     ))}
                 </div>
             </div>
 
-            <div style={styles.actions}>
-                <button style={styles.completeBtn}>Marcar como Concluída ✅</button>
-            </div>
+            <button style={styles.completeBtn}>
+                <CheckCircle size={18} /> Marcar como Concluída
+            </button>
         </div>
     );
 }
 
 const styles = {
-    container: {
-        maxWidth: '900px',
-        margin: '0 auto',
+    container: { maxWidth: '900px', margin: '0 auto' },
+    loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: '#64748b' },
+    back: {
+        display: 'inline-flex', alignItems: 'center', gap: '6px', marginBottom: '24px',
+        color: '#8b5cf6', textDecoration: 'none', fontWeight: 500, fontSize: '0.9rem',
     },
-    backLink: {
-        display: 'inline-block',
-        marginBottom: '20px',
-        color: '#667eea',
-        textDecoration: 'none',
-        fontWeight: 'bold',
-    },
-    videoContainer: {
-        background: '#000',
-        borderRadius: '15px',
-        overflow: 'hidden',
-        boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
-        marginBottom: '30px',
-    },
-    iframe: {
-        display: 'block',
+    videoWrap: {
+        background: '#000', borderRadius: '16px', overflow: 'hidden',
+        boxShadow: '0 12px 40px rgba(0,0,0,0.4)', marginBottom: '32px',
     },
     content: {
-        background: 'white',
-        padding: '40px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
+        background: 'var(--bg-card)', padding: '36px', borderRadius: '16px',
+        border: '1px solid var(--border)', marginBottom: '24px',
     },
-    title: {
-        marginTop: 0,
-        marginBottom: '20px',
-        color: '#333',
-    },
-    text: {
-        lineHeight: '1.8',
-        color: '#555',
-        fontSize: '1.1rem',
-    },
-    actions: {
-        marginTop: '30px',
-        textAlign: 'right',
-    },
+    title: { color: '#fff', fontWeight: 700, fontSize: '1.5rem', marginBottom: '20px', marginTop: 0 },
+    text: { color: '#94a3b8', lineHeight: 1.8, fontSize: '1rem' },
     completeBtn: {
-        background: '#38a169',
-        color: 'white',
-        border: 'none',
-        padding: '15px 30px',
-        borderRadius: '8px',
-        fontSize: '1rem',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        transition: 'background 0.2s',
+        display: 'inline-flex', alignItems: 'center', gap: '8px',
+        background: 'linear-gradient(135deg, #22c55e, #16a34a)', color: '#fff',
+        border: 'none', padding: '14px 28px', borderRadius: '12px',
+        fontWeight: 600, fontSize: '0.95rem', cursor: 'pointer',
+        boxShadow: '0 4px 15px rgba(34,197,94,0.3)', transition: 'all 0.15s',
+        fontFamily: 'var(--font-sans)',
     },
-    centered: {
-        textAlign: 'center',
-        padding: '50px',
-        color: '#666',
-    },
-    error: {
-        color: 'red',
-        textAlign: 'center',
-        padding: '20px',
-    }
 };
-
-export default LessonPlayer;

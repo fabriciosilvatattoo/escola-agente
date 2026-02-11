@@ -1,120 +1,74 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { UserPlus, GraduationCap } from 'lucide-react';
+import './App.css';
 
-function Register() {
+export default function Register() {
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const navigate = useNavigate();
+    const [submitting, setSubmitting] = useState(false);
+    const { login } = useAuth();
 
     const handleRegister = async (e) => {
         e.preventDefault();
+        setError('');
+        setSubmitting(true);
         try {
-            const response = await fetch('/api/register', {
+            const res = await fetch('/api/register', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password }),
             });
-
-            if (response.ok) {
-                navigate('/login');
+            const data = await res.json();
+            if (res.ok) {
+                // Auto-login após cadastro
+                login(data.token, data.user);
             } else {
-                const data = await response.json();
                 setError(data.error || 'Erro ao cadastrar');
             }
-        } catch (err) {
-            setError('Erro de conexão');
+        } catch {
+            setError('Erro de conexão com o servidor');
+        } finally {
+            setSubmitting(false);
         }
     };
 
     return (
-        <div style={styles.container}>
-            <div style={styles.card}>
-                <h1 style={styles.title}>Crie sua conta</h1>
-                <form onSubmit={handleRegister} style={styles.form}>
-                    <input
-                        type="text"
-                        placeholder="Nome Completo"
-                        value={name}
-                        onChange={(e) => setName(e.target.value)}
-                        style={styles.input}
-                        required
-                    />
-                    <input
-                        type="email"
-                        placeholder="Email"
-                        value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        style={styles.input}
-                        required
-                    />
-                    <input
-                        type="password"
-                        placeholder="Senha"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        style={styles.input}
-                        required
-                    />
-                    {error && <p style={styles.error}>{error}</p>}
-                    <button type="submit" style={styles.button}>Cadastrar</button>
+        <div className="login-page">
+            <div className="glass-panel login-card">
+                <div className="login-header">
+                    <div className="logo-icon"><GraduationCap size={32} color="white" /></div>
+                    <h1>Crie sua conta</h1>
+                    <p>Comece sua jornada de aprendizado</p>
+                </div>
+                <form onSubmit={handleRegister}>
+                    <div className="input-group">
+                        <label>Nome completo</label>
+                        <input type="text" placeholder="Seu nome" value={name}
+                            onChange={e => setName(e.target.value)} required />
+                    </div>
+                    <div className="input-group">
+                        <label>Email</label>
+                        <input type="email" placeholder="seu@email.com" value={email}
+                            onChange={e => setEmail(e.target.value)} required />
+                    </div>
+                    <div className="input-group">
+                        <label>Senha</label>
+                        <input type="password" placeholder="Mínimo 6 caracteres" value={password}
+                            onChange={e => setPassword(e.target.value)} required minLength={6} />
+                    </div>
+                    {error && <div className="error-msg">{error}</div>}
+                    <button type="submit" className="btn-primary w-100" disabled={submitting}>
+                        <UserPlus size={18} /> {submitting ? 'Criando...' : 'Criar conta'}
+                    </button>
                 </form>
-                <p style={{ marginTop: '15px' }}>
-                    Já tem conta? <Link to="/login" style={{ color: '#667eea' }}>Faça login</Link>
+                <p className="login-footer">
+                    Já tem conta? <Link to="/login">Fazer login</Link>
                 </p>
             </div>
         </div>
     );
 }
-
-const styles = {
-    container: {
-        height: '100vh',
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        background: 'linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)',
-        fontFamily: 'Inter, sans-serif',
-    },
-    card: {
-        padding: '40px',
-        background: 'white',
-        borderRadius: '15px',
-        boxShadow: '0 10px 25px rgba(0,0,0,0.1)',
-        width: '100%',
-        maxWidth: '400px',
-        textAlign: 'center',
-    },
-    title: {
-        marginBottom: '25px',
-        color: '#333',
-    },
-    form: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px',
-    },
-    input: {
-        padding: '12px',
-        borderRadius: '8px',
-        border: '1px solid #ddd',
-        fontSize: '16px',
-    },
-    button: {
-        padding: '12px',
-        borderRadius: '8px',
-        border: 'none',
-        background: '#667eea',
-        color: 'white',
-        fontSize: '16px',
-        cursor: 'pointer',
-        fontWeight: 'bold',
-    },
-    error: {
-        color: 'red',
-        fontSize: '14px',
-    },
-};
-
-export default Register;

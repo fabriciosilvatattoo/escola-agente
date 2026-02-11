@@ -1,20 +1,12 @@
-import { useNavigate, useLocation, Link } from 'react-router-dom';
-import { BookOpen, MonitorPlay, MessageSquare, Users, LogOut, GraduationCap, LayoutDashboard } from 'lucide-react';
-import './App.css'; // Garantir estilos globais
+import { useLocation, Link } from 'react-router-dom';
+import { useAuth } from './AuthContext';
+import { BookOpen, MessageSquare, Users, LogOut, GraduationCap } from 'lucide-react';
 
-function Sidebar() {
-    const navigate = useNavigate();
+export default function Sidebar() {
     const location = useLocation();
+    const { user, logout } = useAuth();
 
-    const handleLogout = () => {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        navigate('/login');
-    };
-
-    const isActive = (path) => {
-        return location.pathname.startsWith(path);
-    };
+    const isActive = (path) => location.pathname.startsWith(path);
 
     const menuItems = [
         { path: '/modules', label: 'Meus Cursos', icon: BookOpen },
@@ -24,47 +16,42 @@ function Sidebar() {
 
     return (
         <aside style={styles.sidebar}>
-            {/* Logo */}
             <div style={styles.logoContainer}>
                 <div style={styles.logoBox}>
                     <GraduationCap size={28} color="#fff" />
                 </div>
                 <div>
                     <h1 style={styles.brandName}>NEXUS</h1>
-                    <span style={styles.brandSubtitle}>Academy</span>
+                    <span style={styles.brandSub}>Academy</span>
                 </div>
             </div>
 
-            {/* Navegação */}
             <nav style={styles.nav}>
-                {menuItems.map((item) => {
+                {menuItems.map(item => {
                     const active = isActive(item.path);
                     const Icon = item.icon;
-
                     return (
-                        <Link
-                            key={item.path}
-                            to={item.path}
-                            style={{
-                                ...styles.link,
-                                ...(active ? styles.linkActive : {}),
-                            }}
-                        >
-                            <Icon size={20} color={active ? '#fff' : '#94a3b8'} style={{ minWidth: '24px' }} />
-                            <span style={active ? { color: '#fff', fontWeight: 600 } : { color: '#94a3b8' }}>
-                                {item.label}
-                            </span>
-                            {active && <div style={styles.activeIndicator} />}
+                        <Link key={item.path} to={item.path} style={{ ...styles.link, ...(active ? styles.linkActive : {}) }}>
+                            {active && <div style={styles.indicator} />}
+                            <Icon size={20} style={{ color: active ? '#fff' : '#64748b', flexShrink: 0 }} />
+                            <span style={{ color: active ? '#fff' : '#94a3b8', fontWeight: active ? 600 : 400 }}>{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
 
-            {/* Footer / Logout */}
             <div style={styles.footer}>
-                <button onClick={handleLogout} style={styles.logoutBtn}>
-                    <LogOut size={18} />
-                    <span>Sair da conta</span>
+                {user && (
+                    <div style={styles.userInfo}>
+                        <div style={styles.avatar}>{user.name?.[0]?.toUpperCase() || 'U'}</div>
+                        <div>
+                            <div style={styles.userName}>{user.name}</div>
+                            <div style={styles.userRole}>{user.role === 'admin' ? 'Administrador' : 'Aluno'}</div>
+                        </div>
+                    </div>
+                )}
+                <button onClick={logout} style={styles.logoutBtn}>
+                    <LogOut size={16} /> Sair
                 </button>
             </div>
         </aside>
@@ -73,100 +60,45 @@ function Sidebar() {
 
 const styles = {
     sidebar: {
-        width: '280px',
-        height: '100vh',
-        background: 'var(--bg-secondary)', // #1a1c23
-        borderRight: '1px solid var(--border)',
-        display: 'flex',
-        flexDirection: 'column',
-        position: 'fixed',
-        left: 0,
-        top: 0,
-        zIndex: 50,
-        padding: '30px 20px',
+        width: '280px', height: '100vh', background: 'var(--bg-secondary)',
+        borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column',
+        position: 'fixed', left: 0, top: 0, zIndex: 50, padding: '28px 16px',
     },
     logoContainer: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '15px',
-        marginBottom: '50px',
-        paddingLeft: '10px',
+        display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '44px', paddingLeft: '12px',
     },
     logoBox: {
-        width: '48px',
-        height: '48px',
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 8px 16px rgba(139, 92, 246, 0.3)',
+        width: '44px', height: '44px', borderRadius: '12px',
+        background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 6px 20px rgba(139,92,246,0.35)',
     },
-    brandName: {
-        fontSize: '1.5rem',
-        fontWeight: '700',
-        color: 'white',
-        lineHeight: 1,
-        letterSpacing: '-0.5px'
-    },
-    brandSubtitle: {
-        fontSize: '0.85rem',
-        color: 'var(--text-muted)',
-        fontWeight: '500',
-        letterSpacing: '1px',
-        textTransform: 'uppercase'
-    },
-    nav: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '8px',
-        flex: 1,
-    },
+    brandName: { fontSize: '1.4rem', fontWeight: 700, color: '#fff', lineHeight: 1, letterSpacing: '-0.5px' },
+    brandSub: { fontSize: '0.75rem', color: '#64748b', fontWeight: 500, letterSpacing: '2px', textTransform: 'uppercase' },
+    nav: { display: 'flex', flexDirection: 'column', gap: '4px', flex: 1 },
     link: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        padding: '14px 18px',
-        borderRadius: '12px',
-        transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
-        position: 'relative',
-        overflow: 'hidden',
-        textDecoration: 'none',
+        display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px',
+        borderRadius: '10px', textDecoration: 'none', position: 'relative', transition: 'background 0.15s',
     },
-    linkActive: {
-        background: 'rgba(139, 92, 246, 0.1)', // primary com opacidade
+    linkActive: { background: 'rgba(139,92,246,0.12)' },
+    indicator: {
+        position: 'absolute', left: 0, top: '50%', transform: 'translateY(-50%)',
+        width: '3px', height: '20px', background: '#8b5cf6', borderRadius: '0 3px 3px 0',
     },
-    activeIndicator: {
-        position: 'absolute',
-        left: 0,
-        top: '50%',
-        transform: 'translateY(-50%)',
-        width: '4px',
-        height: '24px',
-        background: 'var(--primary)',
-        borderRadius: '0 4px 4px 0',
+    footer: { borderTop: '1px solid var(--border)', paddingTop: '16px' },
+    userInfo: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '12px', paddingLeft: '4px' },
+    avatar: {
+        width: '36px', height: '36px', borderRadius: '10px',
+        background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 700, fontSize: '0.9rem',
     },
-    footer: {
-        marginTop: 'auto',
-        paddingTop: '20px',
-        borderTop: '1px solid var(--border)',
-    },
+    userName: { color: '#fff', fontWeight: 600, fontSize: '0.9rem' },
+    userRole: { color: '#64748b', fontSize: '0.75rem' },
     logoutBtn: {
-        width: '100%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: '10px',
-        padding: '12px',
-        background: 'transparent',
-        border: '1px solid var(--border)',
-        color: 'var(--text-muted)',
-        borderRadius: '12px',
-        cursor: 'pointer',
-        transition: '0.2s',
-        fontSize: '0.9rem',
-        fontWeight: 500
-    }
+        width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        gap: '8px', padding: '10px', background: 'transparent', border: '1px solid var(--border)',
+        color: '#64748b', borderRadius: '10px', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500,
+        transition: 'all 0.15s', fontFamily: 'var(--font-sans)',
+    },
 };
-
-export default Sidebar;

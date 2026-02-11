@@ -1,82 +1,82 @@
 import { useEffect, useState } from 'react';
+import { useAuth } from './AuthContext';
+import { Send, Heart, MessageCircle } from 'lucide-react';
 
-function Feed() {
+export default function Feed() {
+    const { user, token } = useAuth();
     const [posts, setPosts] = useState([]);
     const [newPost, setNewPost] = useState('');
     const [loading, setLoading] = useState(true);
-    const [error, setError] = useState(null);
 
-    useEffect(() => {
-        fetchPosts();
-    }, []);
+    useEffect(() => { fetchPosts(); }, []);
 
     const fetchPosts = () => {
         fetch('/api/feed')
             .then(res => res.json())
-            .then(data => {
-                setPosts(data);
-                setLoading(false);
-            })
-            .catch(err => {
-                console.error(err);
-                setError('Erro ao carregar feed');
-                setLoading(false);
+            .then(data => { setPosts(Array.isArray(data) ? data : []); setLoading(false); })
+            .catch(() => setLoading(false));
+    };
+
+    const handlePost = async () => {
+        if (!newPost.trim()) return;
+        try {
+            const res = await fetch('/api/posts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                body: JSON.stringify({ content: newPost }),
             });
+            if (!res.ok) throw new Error();
+            const post = await res.json();
+            setPosts([post, ...posts]);
+            setNewPost('');
+        } catch {
+            alert('Faça login para postar');
+        }
     };
 
-    const handleCreatePost = (e) => {
-        e.preventDefault();
-        const token = localStorage.getItem('token');
-
-        fetch('/api/posts', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify({ content: newPost })
-        })
-            .then(res => {
-                if (!res.ok) throw new Error('Erro ao criar post');
-                return res.json();
-            })
-            .then(post => {
-                setPosts([post, ...posts]);
-                setNewPost('');
-            })
-            .catch(err => alert('Erro ao postar'));
-    };
-
-    if (loading) return <div style={styles.centered}>Carregando feed...</div>;
-    if (error) return <div style={styles.error}>{error}</div>;
+    if (loading) return <div style={styles.loading}>Carregando comunidade...</div>;
 
     return (
         <div style={styles.container}>
-            <h1 style={styles.title}>Comunidade</h1>
+            <h1 style={styles.pageTitle}>Comunidade</h1>
+            <p style={styles.pageSub}>Compartilhe experiências com outros alunos</p>
 
-            <div style={styles.createPost}>
-                <textarea
-                    value={newPost}
-                    onChange={(e) => setNewPost(e.target.value)}
-                    placeholder="No que você está pensando?"
-                    style={styles.textarea}
-                />
-                <button onClick={handleCreatePost} disabled={!newPost} style={styles.postBtn}>Publicar</button>
+            <div style={styles.composer}>
+                <div style={styles.composerTop}>
+                    <div style={styles.avatar}>{user?.name?.[0]?.toUpperCase() || 'U'}</div>
+                    <textarea
+                        style={styles.textarea} value={newPost}
+                        onChange={e => setNewPost(e.target.value)}
+                        placeholder="Compartilhe algo com a comunidade..."
+                        rows={2}
+                    />
+                </div>
+                <div style={styles.composerBottom}>
+                    <button onClick={handlePost} disabled={!newPost.trim()} style={styles.postBtn}>
+                        <Send size={16} /> Publicar
+                    </button>
+                </div>
             </div>
 
             <div style={styles.feed}>
+                {posts.length === 0 && (
+                    <div style={styles.empty}>
+                        <MessageCircle size={40} style={{ color: '#64748b', marginBottom: '12px' }} />
+                        <p>Nenhuma publicação ainda. Seja o primeiro!</p>
+                    </div>
+                )}
                 {posts.map(post => (
                     <div key={post.id} style={styles.post}>
                         <div style={styles.postHeader}>
-                            <div style={styles.avatar}>{post.author_name[0]}</div>
+                            <div style={styles.postAvatar}>{post.author_name?.[0]?.toUpperCase() || '?'}</div>
                             <div>
-                                <strong style={styles.author}>{post.author_name}</strong>
-                                <span style={styles.date}>{new Date(post.created_at).toLocaleDateString()}</span>
+                                <div style={styles.authorName}>{post.author_name || 'Anônimo'}</div>
+                                <div style={styles.postDate}>{new Date(post.created_at).toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
                             </div>
                         </div>
-                        <p style={styles.content}>{post.content}</p>
-                        <div style={styles.actions}>
-                            <button style={styles.likeBtn}>❤️ {post.likes_count}</button>
+                        <p style={styles.postContent}>{post.content}</p>
+                        <div style={styles.postActions}>
+                            <button style={styles.likeBtn}><Heart size={16} /> {post.likes_count || 0}</button>
                         </div>
                     </div>
                 ))}
@@ -86,105 +86,56 @@ function Feed() {
 }
 
 const styles = {
-    container: {
-        maxWidth: '600px',
-        margin: '0 auto',
+    container: { maxWidth: '640px', margin: '0 auto' },
+    loading: { display: 'flex', justifyContent: 'center', alignItems: 'center', height: '50vh', color: '#64748b' },
+    pageTitle: {
+        fontSize: '2rem', fontWeight: 700, marginBottom: '6px',
+        background: 'linear-gradient(to right, #fff, #94a3b8)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
     },
-    title: {
-        fontSize: '2rem',
-        marginBottom: '30px',
-        color: '#333',
+    pageSub: { color: '#64748b', marginBottom: '32px', fontSize: '1rem' },
+    composer: {
+        background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)',
+        padding: '20px', marginBottom: '32px',
     },
-    createPost: {
-        background: 'white',
-        padding: '20px',
-        borderRadius: '15px',
-        boxShadow: '0 5px 15px rgba(0,0,0,0.05)',
-        marginBottom: '40px',
+    composerTop: { display: 'flex', gap: '12px', marginBottom: '12px' },
+    avatar: {
+        width: '40px', height: '40px', borderRadius: '10px', flexShrink: 0,
+        background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 700, fontSize: '1rem',
     },
     textarea: {
-        width: '100%',
-        minHeight: '100px',
-        border: '1px solid #eee',
-        borderRadius: '10px',
-        padding: '15px',
-        fontSize: '1rem',
-        resize: 'vertical',
-        outline: 'none',
-        marginBottom: '15px',
+        flex: 1, background: 'var(--bg-primary)', border: '1px solid var(--border)',
+        borderRadius: '10px', padding: '12px 14px', color: '#fff', fontSize: '0.95rem',
+        resize: 'none', fontFamily: 'var(--font-sans)', outline: 'none',
     },
+    composerBottom: { display: 'flex', justifyContent: 'flex-end' },
     postBtn: {
-        background: '#667eea',
-        color: 'white',
-        border: 'none',
-        padding: '10px 25px',
-        borderRadius: '8px',
-        fontWeight: 'bold',
-        cursor: 'pointer',
-        float: 'right',
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', color: '#fff',
+        border: 'none', padding: '10px 20px', borderRadius: '10px',
+        fontWeight: 600, fontSize: '0.85rem', cursor: 'pointer', fontFamily: 'var(--font-sans)',
     },
-    feed: {
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '20px',
-    },
+    feed: { display: 'flex', flexDirection: 'column', gap: '16px' },
+    empty: { textAlign: 'center', padding: '60px 20px', color: '#64748b' },
     post: {
-        background: 'white',
+        background: 'var(--bg-card)', borderRadius: '16px', border: '1px solid var(--border)',
         padding: '20px',
-        borderRadius: '15px',
-        boxShadow: '0 2px 10px rgba(0,0,0,0.03)',
     },
-    postHeader: {
-        display: 'flex',
-        alignItems: 'center',
-        gap: '15px',
-        marginBottom: '15px',
+    postHeader: { display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' },
+    postAvatar: {
+        width: '36px', height: '36px', borderRadius: '10px',
+        background: 'var(--bg-hover)', color: '#8b5cf6',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        fontWeight: 700, fontSize: '0.9rem',
     },
-    avatar: {
-        width: '40px',
-        height: '40px',
-        background: '#667eea',
-        color: 'white',
-        borderRadius: '50%',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        fontWeight: 'bold',
-    },
-    author: {
-        display: 'block',
-        color: '#333',
-    },
-    date: {
-        fontSize: '0.8rem',
-        color: '#999',
-    },
-    content: {
-        lineHeight: '1.6',
-        color: '#444',
-        marginBottom: '15px',
-    },
-    actions: {
-        borderTop: '1px solid #eee',
-        paddingTop: '15px',
-    },
+    authorName: { color: '#fff', fontWeight: 600, fontSize: '0.9rem' },
+    postDate: { color: '#64748b', fontSize: '0.75rem' },
+    postContent: { color: '#94a3b8', lineHeight: 1.6, fontSize: '0.95rem', marginBottom: '14px' },
+    postActions: { borderTop: '1px solid var(--border)', paddingTop: '12px' },
     likeBtn: {
-        background: 'transparent',
-        border: 'none',
-        color: '#e53e3e',
-        cursor: 'pointer',
-        fontWeight: 'bold',
+        background: 'transparent', border: 'none', color: '#ef4444',
+        display: 'inline-flex', alignItems: 'center', gap: '6px',
+        cursor: 'pointer', fontWeight: 600, fontSize: '0.85rem', fontFamily: 'var(--font-sans)',
     },
-    centered: {
-        textAlign: 'center',
-        padding: '50px',
-        color: '#666',
-    },
-    error: {
-        color: 'red',
-        textAlign: 'center',
-        padding: '20px',
-    }
 };
-
-export default Feed;

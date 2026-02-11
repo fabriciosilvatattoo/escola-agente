@@ -1,210 +1,182 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react';
+import { useAuth } from './AuthContext';
+import { Send, Bot, User } from 'lucide-react';
 
-function Chat() {
+export default function Chat() {
+    const { user } = useAuth();
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: 'Olá! Sou o agente da escola. Como posso te ajudar hoje?' }
-    ])
-    const [input, setInput] = useState('')
-    const [loading, setLoading] = useState(false)
+        { role: 'assistant', content: `Olá${user?.name ? ', ' + user.name.split(' ')[0] : ''}! Sou o tutor IA da NEXUS Academy. Pode me perguntar qualquer coisa sobre tatuagem, técnicas, materiais ou sobre o curso. 🎨` }
+    ]);
+    const [input, setInput] = useState('');
+    const [streaming, setStreaming] = useState(false);
+    const chatEndRef = useRef(null);
+    const textareaRef = useRef(null);
+
+    useEffect(() => {
+        chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    }, [messages, streaming]);
 
     const sendMessage = async () => {
-        if (!input.trim() || loading) return
+        const text = input.trim();
+        if (!text || streaming) return;
 
-        const userMessage = { role: 'user', content: input }
-        const newMessages = [...messages, userMessage]
-        setMessages(newMessages)
-        setInput('')
-        setLoading(true)
+        const userMsg = { role: 'user', content: text };
+        const updated = [...messages, userMsg];
+        setMessages(updated);
+        setInput('');
+        setStreaming(true);
+
+        // Adiciona mensagem vazia do assistant que vai preencher via streaming
+        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
         try {
-            const response = await fetch('/api/chat', {
+            const res = await fetch('/api/chat/stream', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    message: input,
-                    history: newMessages.slice(1)
-                })
-            })
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
+                },
+                body: JSON.stringify({ message: text, history: updated.slice(1) }),
+            });
 
-            const data = await response.json()
+            if (!res.ok) throw new Error('Erro na resposta');
 
-            if (data.success) {
-                setMessages([...newMessages, { role: 'assistant', content: data.reply }])
-            } else {
-                setMessages([...newMessages, { role: 'assistant', content: 'Desculpe, tive um erro. Tente novamente.' }])
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder();
+            let accumulated = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.startsWith('data: ')) {
+                        const data = line.slice(6);
+                        if (data === '[DONE]') break;
+                        try {
+                            const parsed = JSON.parse(data);
+                            const delta = parsed.choices?.[0]?.delta?.content || '';
+                            accumulated += delta;
+                            // Atualiza última mensagem
+                            setMessages(prev => {
+                                const copy = [...prev];
+                                copy[copy.length - 1] = { role: 'assistant', content: accumulated };
+                                return copy;
+                            });
+                        } catch { }
+                    }
+                }
             }
-        } catch (error) {
-            console.error('Erro:', error)
-            setMessages([...newMessages, { role: 'assistant', content: 'Erro de conexão. Tente novamente.' }])
+        } catch (err) {
+            console.error(err);
+            setMessages(prev => {
+                const copy = [...prev];
+                copy[copy.length - 1] = { role: 'assistant', content: 'Desculpe, tive um problema. Tente novamente.' };
+                return copy;
+            });
         } finally {
-            setLoading(false)
+            setStreaming(false);
         }
-    }
+    };
 
-    const handleKeyPress = (e) => {
+    const handleKeyDown = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault()
-            sendMessage()
+            e.preventDefault();
+            sendMessage();
         }
-    }
+    };
 
     return (
         <div style={styles.container}>
             <div style={styles.header}>
-                <h1 style={styles.title}>🎓 Escola Inteligente</h1>
-                <p style={styles.subtitle}>Agente GLM-4.7 - Pergunte sobre matrículas, notas, horários</p>
+                <Bot size={24} style={{ color: '#8b5cf6' }} />
+                <div>
+                    <h2 style={styles.headerTitle}>Tutor IA</h2>
+                    <span style={styles.headerSub}>Powered by GLM-4.7</span>
+                </div>
             </div>
 
-            <div style={styles.chatContainer}>
-                {messages.map((msg, index) => (
-                    <div key={index} style={msg.role === 'user' ? styles.userMessage : styles.assistantMessage}>
-                        <div style={msg.role === 'user' ? styles.userBubble : styles.assistantBubble}>
-                            <div style={styles.messageRole}>{msg.role === 'user' ? 'Você' : 'Agente'}</div>
-                            <div style={styles.messageText}>{msg.content}</div>
+            <div style={styles.chatArea}>
+                {messages.map((msg, i) => (
+                    <div key={i} style={msg.role === 'user' ? styles.userRow : styles.assistantRow}>
+                        <div style={msg.role === 'user' ? styles.userAvatar : styles.botAvatar}>
+                            {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+                        </div>
+                        <div style={msg.role === 'user' ? styles.userBubble : styles.botBubble}>
+                            <span style={styles.msgText}>{msg.content}{streaming && i === messages.length - 1 && msg.role === 'assistant' ? '▍' : ''}</span>
                         </div>
                     </div>
                 ))}
-
-                {loading && (
-                    <div style={styles.assistantMessage}>
-                        <div style={styles.assistantBubble}>
-                            <div style={styles.messageRole}>Agente</div>
-                            <div style={styles.loading}>Digitando...</div>
-                        </div>
-                    </div>
-                )}
+                <div ref={chatEndRef} />
             </div>
 
-            <div style={styles.inputContainer}>
+            <div style={styles.inputBar}>
                 <textarea
+                    ref={textareaRef}
                     style={styles.textarea}
                     value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyPress={handleKeyPress}
-                    placeholder="Digite sua pergunta sobre a escola..."
-                    rows={3}
+                    onChange={e => setInput(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Pergunte algo ao tutor..."
+                    rows={1}
+                    disabled={streaming}
                 />
-                <button
-                    onClick={sendMessage}
-                    disabled={loading || !input.trim()}
-                    style={{ ...styles.button, ...(loading || !input.trim() ? styles.buttonDisabled : {}) }}
-                >
-                    {loading ? '...' : 'Enviar'}
+                <button onClick={sendMessage} disabled={streaming || !input.trim()} style={styles.sendBtn}>
+                    <Send size={18} />
                 </button>
             </div>
         </div>
-    )
+    );
 }
 
 const styles = {
-    container: {
-        maxWidth: '900px',
-        margin: '0 auto',
-        padding: '20px',
-        fontFamily: 'Inter, -apple-system, BlinkMacSystemFont, sans-serif'
-    },
+    container: { display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', maxWidth: '900px', margin: '0 auto' },
     header: {
-        textAlign: 'center',
-        marginBottom: '30px',
-        padding: '30px 20px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        borderRadius: '15px',
-        color: 'white',
-        boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)'
+        display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px',
+        padding: '16px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
     },
-    title: {
-        fontSize: '2rem',
-        marginBottom: '10px',
-        fontWeight: 700
+    headerTitle: { fontSize: '1.1rem', fontWeight: 600, color: '#fff', margin: 0 },
+    headerSub: { fontSize: '0.75rem', color: '#64748b' },
+    chatArea: {
+        flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px',
+        padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
+        marginBottom: '16px',
     },
-    subtitle: {
-        fontSize: '1rem',
-        opacity: 0.95
+    userRow: { display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'flex-start' },
+    assistantRow: { display: 'flex', justifyContent: 'flex-start', gap: '10px', alignItems: 'flex-start' },
+    userAvatar: {
+        width: '32px', height: '32px', borderRadius: '8px', background: '#8b5cf6', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', order: 1,
     },
-    chatContainer: {
-        minHeight: '400px',
-        marginBottom: '20px',
-        padding: '20px',
-        background: '#f8f9fa',
-        borderRadius: '10px',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '15px'
-    },
-    userMessage: {
-        display: 'flex',
-        justifyContent: 'flex-end'
-    },
-    assistantMessage: {
-        display: 'flex',
-        justifyContent: 'flex-start'
+    botAvatar: {
+        width: '32px', height: '32px', borderRadius: '8px', background: 'var(--bg-hover)', flexShrink: 0,
+        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6',
     },
     userBubble: {
-        background: '#667eea',
-        color: 'white',
-        padding: '15px 20px',
-        borderRadius: '15px 15px 0 15px',
-        maxWidth: '70%',
-        wordWrap: 'break-word'
+        background: 'rgba(139,92,246,0.15)', padding: '12px 16px', borderRadius: '14px 14px 2px 14px',
+        maxWidth: '75%', color: '#e2e8f0',
     },
-    assistantBubble: {
-        background: 'white',
-        color: '#333',
-        padding: '15px 20px',
-        borderRadius: '15px 15px 15px 0',
-        maxWidth: '70%',
-        wordWrap: 'break-word',
-        boxShadow: '0 2px 5px rgba(0,0,0,0.05)'
+    botBubble: {
+        background: 'var(--bg-hover)', padding: '12px 16px', borderRadius: '14px 14px 14px 2px',
+        maxWidth: '75%', color: '#e2e8f0',
     },
-    messageRole: {
-        fontSize: '0.75rem',
-        marginBottom: '5px',
-        opacity: 0.7,
-        fontWeight: 600
-    },
-    messageText: {
-        lineHeight: '1.6',
-        whiteSpace: 'pre-wrap'
-    },
-    loading: {
-        color: '#999',
-        fontStyle: 'italic'
-    },
-    inputContainer: {
-        display: 'flex',
-        gap: '10px',
-        alignItems: 'flex-end'
+    msgText: { lineHeight: '1.65', whiteSpace: 'pre-wrap', fontSize: '0.95rem' },
+    inputBar: {
+        display: 'flex', gap: '10px', alignItems: 'flex-end',
+        padding: '12px 16px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
     },
     textarea: {
-        flex: 1,
-        padding: '15px',
-        border: '2px solid #e0e0e0',
-        borderRadius: '10px',
-        fontSize: '1rem',
-        fontFamily: 'Inter, sans-serif',
-        resize: 'vertical',
-        outline: 'none',
-        transition: 'border-color 0.3s'
+        flex: 1, padding: '12px 14px', background: 'var(--bg-primary)', border: '1px solid var(--border)',
+        borderRadius: '10px', color: '#fff', fontSize: '0.95rem', resize: 'none', fontFamily: 'var(--font-sans)',
+        maxHeight: '120px', outline: 'none',
     },
-    textareaFocus: {
-        borderColor: '#667eea'
+    sendBtn: {
+        width: '44px', height: '44px', borderRadius: '10px', border: 'none',
+        background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
+        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s',
     },
-    button: {
-        padding: '15px 30px',
-        background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        color: 'white',
-        border: 'none',
-        borderRadius: '10px',
-        fontSize: '1rem',
-        fontWeight: 600,
-        cursor: 'pointer',
-        transition: 'transform 0.2s, box-shadow 0.2s',
-        height: 'auto'
-    },
-    buttonDisabled: {
-        opacity: 0.5,
-        cursor: 'not-allowed'
-    }
-}
-
-export default Chat
+};
