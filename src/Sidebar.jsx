@@ -22,13 +22,11 @@ export default function Sidebar() {
         <aside style={styles.sidebar}>
             {/* Logo Area */}
             <div style={styles.logoContainer}>
-                <div style={styles.logoBox}>
-                    <GraduationCap size={24} color="#fff" />
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <h1 style={styles.brandName}>NEXUS</h1>
-                    <span style={styles.brandSub}>ACADEMY</span>
-                </div>
+                <img
+                    src="https://xvagvpdrpsaarhqsjbnn.supabase.co/storage/v1/object/public/imagemns/ANDREZA/Logo-andreza.png"
+                    alt="Andreza Tattoo Logo"
+                    style={styles.logoImage}
+                />
             </div>
 
             {/* Navigation */}
@@ -125,15 +123,10 @@ const styles = {
         marginBottom: '40px',
         padding: '0 8px',
     },
-    logoBox: {
-        width: '42px',
-        height: '42px',
-        borderRadius: '12px',
-        background: 'linear-gradient(135deg, var(--primary), var(--secondary))', // Variáveis
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        boxShadow: '0 8px 16px rgba(139, 92, 246, 0.3)',
+    logoImage: {
+        height: '50px',
+        objectFit: 'contain',
+        filter: 'drop-shadow(0 4px 6px rgba(0,0,0,0.3))'
     },
     brandName: {
         fontSize: '1.25rem',
