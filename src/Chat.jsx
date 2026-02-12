@@ -6,7 +6,7 @@ import './App.css';
 export default function Chat() {
     const { user } = useAuth();
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: `Olá, ${user?.name?.split(' ')[0] || 'Aluno'}! Sou a IA da NEXUS Academy. 🧠\nPosso ajudar com dúvidas sobre as aulas, técnicas de tatuagem ou materiais. O que você quer aprender hoje?` }
+        { role: 'assistant', content: `Olá, ${user?.name?.split(' ')[0] || 'Aluno'}! Sou a IA da Andreza Tattoo Academy. 🧠\nPosso ajudar com dúvidas sobre as aulas, técnicas de tatuagem ou materiais. O que você quer aprender hoje?` }
     ]);
     const [input, setInput] = useState('');
     const [streaming, setStreaming] = useState(false);
