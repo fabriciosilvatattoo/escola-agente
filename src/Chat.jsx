@@ -1,85 +1,50 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from './AuthContext';
-import { Send, Bot, User } from 'lucide-react';
+import { Send, Bot, User, Sparkles } from 'lucide-react';
+import './App.css';
 
 export default function Chat() {
     const { user } = useAuth();
     const [messages, setMessages] = useState([
-        { role: 'assistant', content: `Olá${user?.name ? ', ' + user.name.split(' ')[0] : ''}! Sou o tutor IA da NEXUS Academy. Pode me perguntar qualquer coisa sobre tatuagem, técnicas, materiais ou sobre o curso. 🎨` }
+        { role: 'assistant', content: `Olá, ${user?.name?.split(' ')[0] || 'Aluno'}! Sou a IA da NEXUS Academy. 🧠\nPosso ajudar com dúvidas sobre as aulas, técnicas de tatuagem ou materiais. O que você quer aprender hoje?` }
     ]);
     const [input, setInput] = useState('');
     const [streaming, setStreaming] = useState(false);
     const chatEndRef = useRef(null);
-    const textareaRef = useRef(null);
 
+    // Scroll to bottom
     useEffect(() => {
         chatEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }, [messages, streaming]);
 
     const sendMessage = async () => {
-        const text = input.trim();
-        if (!text || streaming) return;
+        if (!input.trim() || streaming) return;
 
-        const userMsg = { role: 'user', content: text };
-        const updated = [...messages, userMsg];
-        setMessages(updated);
+        const userMsg = { role: 'user', content: input.trim() };
+        setMessages(prev => [...prev, userMsg]);
         setInput('');
         setStreaming(true);
 
-        // Adiciona mensagem vazia do assistant que vai preencher via streaming
-        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
+        // Mock response
+        setMessages(prev => [...prev, { role: 'assistant', content: '...' }]); // Placeholder
 
-        try {
-            const res = await fetch('/api/chat/stream', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`,
-                },
-                body: JSON.stringify({ message: text, history: updated.slice(1) }),
-            });
-
-            if (!res.ok) throw new Error('Erro na resposta');
-
-            const reader = res.body.getReader();
-            const decoder = new TextDecoder();
-            let accumulated = '';
-
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
-
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split('\n');
-
-                for (const line of lines) {
-                    if (line.startsWith('data: ')) {
-                        const data = line.slice(6);
-                        if (data === '[DONE]') break;
-                        try {
-                            const parsed = JSON.parse(data);
-                            const delta = parsed.choices?.[0]?.delta?.content || '';
-                            accumulated += delta;
-                            // Atualiza última mensagem
-                            setMessages(prev => {
-                                const copy = [...prev];
-                                copy[copy.length - 1] = { role: 'assistant', content: accumulated };
-                                return copy;
-                            });
-                        } catch { }
-                    }
+        // Simula delay de rede e streaming
+        setTimeout(() => {
+            const mockResponse = "Essa é uma resposta simulada do Tutor IA. Em produção, isso conectaria ao GLM-4.7 para analisar sua dúvida sobre tatuagem com base no conteúdo do curso. 🎨";
+            let i = 0;
+            const interval = setInterval(() => {
+                setMessages(prev => {
+                    const newMsgs = [...prev];
+                    newMsgs[newMsgs.length - 1] = { role: 'assistant', content: mockResponse.slice(0, i + 1) };
+                    return newMsgs;
+                });
+                i++;
+                if (i === mockResponse.length) {
+                    clearInterval(interval);
+                    setStreaming(false);
                 }
-            }
-        } catch (err) {
-            console.error(err);
-            setMessages(prev => {
-                const copy = [...prev];
-                copy[copy.length - 1] = { role: 'assistant', content: 'Desculpe, tive um problema. Tente novamente.' };
-                return copy;
-            });
-        } finally {
-            setStreaming(false);
-        }
+            }, 30);
+        }, 1000);
     };
 
     const handleKeyDown = (e) => {
@@ -90,93 +55,139 @@ export default function Chat() {
     };
 
     return (
-        <div style={styles.container}>
+        <div style={styles.container} className="animate-fade-in">
             <div style={styles.header}>
-                <Bot size={24} style={{ color: '#8b5cf6' }} />
+                <div style={styles.headerIcon}>
+                    <Sparkles size={24} color="#fff" />
+                </div>
                 <div>
-                    <h2 style={styles.headerTitle}>Tutor IA</h2>
-                    <span style={styles.headerSub}>Powered by GLM-4.7</span>
+                    <h1 className="text-gradient" style={{ fontSize: '1.5rem', marginBottom: '4px' }}>Tutor IA</h1>
+                    <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Tire dúvidas 24/7 sobre o conteúdo</p>
                 </div>
             </div>
 
-            <div style={styles.chatArea}>
-                {messages.map((msg, i) => (
-                    <div key={i} style={msg.role === 'user' ? styles.userRow : styles.assistantRow}>
-                        <div style={msg.role === 'user' ? styles.userAvatar : styles.botAvatar}>
-                            {msg.role === 'user' ? <User size={16} /> : <Bot size={16} />}
+            <div className="glass-panel" style={styles.chatWindow}>
+                <div style={styles.messagesArea}>
+                    {messages.map((msg, i) => (
+                        <div key={i} style={{
+                            display: 'flex',
+                            justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                            marginBottom: '20px'
+                        }}>
+                            <div style={msg.role === 'user' ? styles.userBubble : styles.botBubble}>
+                                <div style={styles.msgHeader}>
+                                    {msg.role === 'assistant' ? <Bot size={16} /> : <User size={16} />}
+                                    <span style={{ fontSize: '0.8rem', fontWeight: 600, opacity: 0.8 }}>
+                                        {msg.role === 'assistant' ? 'NEXUS AI' : 'Você'}
+                                    </span>
+                                </div>
+                                <div style={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+                                    {msg.content}
+                                </div>
+                            </div>
                         </div>
-                        <div style={msg.role === 'user' ? styles.userBubble : styles.botBubble}>
-                            <span style={styles.msgText}>{msg.content}{streaming && i === messages.length - 1 && msg.role === 'assistant' ? '▍' : ''}</span>
-                        </div>
-                    </div>
-                ))}
-                <div ref={chatEndRef} />
-            </div>
+                    ))}
+                    <div ref={chatEndRef} />
+                </div>
 
-            <div style={styles.inputBar}>
-                <textarea
-                    ref={textareaRef}
-                    style={styles.textarea}
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Pergunte algo ao tutor..."
-                    rows={1}
-                    disabled={streaming}
-                />
-                <button onClick={sendMessage} disabled={streaming || !input.trim()} style={styles.sendBtn}>
-                    <Send size={18} />
-                </button>
+                <div style={styles.inputArea}>
+                    <div style={styles.inputWrapper}>
+                        <textarea
+                            value={input}
+                            onChange={e => setInput(e.target.value)}
+                            onKeyDown={handleKeyDown}
+                            placeholder="Digite sua dúvida aqui..."
+                            style={styles.input}
+                            rows={1}
+                        />
+                        <button
+                            onClick={sendMessage}
+                            disabled={!input.trim() || streaming}
+                            style={{
+                                ...styles.sendBtn,
+                                opacity: !input.trim() ? 0.5 : 1,
+                                cursor: !input.trim() ? 'default' : 'pointer'
+                            }}
+                        >
+                            <Send size={20} />
+                        </button>
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
 const styles = {
-    container: { display: 'flex', flexDirection: 'column', height: 'calc(100vh - 80px)', maxWidth: '900px', margin: '0 auto' },
-    header: {
-        display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px',
-        padding: '16px 20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
+    container: { maxWidth: '900px', margin: '0 auto', height: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column' },
+
+    header: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '24px' },
+
+    headerIcon: {
+        width: '48px', height: '48px', borderRadius: '16px',
+        background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        boxShadow: '0 8px 20px rgba(139, 92, 246, 0.4)'
     },
-    headerTitle: { fontSize: '1.1rem', fontWeight: 600, color: '#fff', margin: 0 },
-    headerSub: { fontSize: '0.75rem', color: '#64748b' },
-    chatArea: {
-        flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '16px',
-        padding: '20px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
-        marginBottom: '16px',
+
+    chatWindow: {
+        flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden',
+        border: '1px solid var(--glass-border)'
     },
-    userRow: { display: 'flex', justifyContent: 'flex-end', gap: '10px', alignItems: 'flex-start' },
-    assistantRow: { display: 'flex', justifyContent: 'flex-start', gap: '10px', alignItems: 'flex-start' },
-    userAvatar: {
-        width: '32px', height: '32px', borderRadius: '8px', background: '#8b5cf6', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', order: 1,
+
+    messagesArea: {
+        flex: 1, overflowY: 'auto', padding: '30px',
+        display: 'flex', flexDirection: 'column'
     },
-    botAvatar: {
-        width: '32px', height: '32px', borderRadius: '8px', background: 'var(--bg-hover)', flexShrink: 0,
-        display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8b5cf6',
-    },
+
     userBubble: {
-        background: 'rgba(139,92,246,0.15)', padding: '12px 16px', borderRadius: '14px 14px 2px 14px',
-        maxWidth: '75%', color: '#e2e8f0',
+        background: 'rgba(139, 92, 246, 0.2)',
+        border: '1px solid rgba(139, 92, 246, 0.3)',
+        borderRadius: '20px 20px 4px 20px',
+        padding: '16px 20px',
+        maxWidth: '80%',
+        color: 'var(--text-primary)',
+        boxShadow: '0 4px 15px rgba(0,0,0,0.1)'
     },
+
     botBubble: {
-        background: 'var(--bg-hover)', padding: '12px 16px', borderRadius: '14px 14px 14px 2px',
-        maxWidth: '75%', color: '#e2e8f0',
+        background: 'rgba(30, 41, 59, 0.6)',
+        border: '1px solid var(--border)',
+        borderRadius: '20px 20px 20px 4px',
+        padding: '16px 20px',
+        maxWidth: '80%',
+        color: 'var(--text-secondary)',
+        backdropFilter: 'blur(10px)'
     },
-    msgText: { lineHeight: '1.65', whiteSpace: 'pre-wrap', fontSize: '0.95rem' },
-    inputBar: {
-        display: 'flex', gap: '10px', alignItems: 'flex-end',
-        padding: '12px 16px', background: 'var(--bg-card)', borderRadius: '14px', border: '1px solid var(--border)',
+
+    msgHeader: {
+        display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px',
+        color: 'var(--text-muted)', borderBottom: '1px solid rgba(255,255,255,0.05)',
+        paddingBottom: '8px'
     },
-    textarea: {
-        flex: 1, padding: '12px 14px', background: 'var(--bg-primary)', border: '1px solid var(--border)',
-        borderRadius: '10px', color: '#fff', fontSize: '0.95rem', resize: 'none', fontFamily: 'var(--font-sans)',
-        maxHeight: '120px', outline: 'none',
+
+    inputArea: {
+        padding: '20px',
+        borderTop: '1px solid var(--border)',
+        background: 'rgba(15, 23, 42, 0.4)'
     },
+
+    inputWrapper: {
+        position: 'relative', display: 'flex', alignItems: 'center',
+        background: 'rgba(2, 6, 23, 0.6)', border: '1px solid var(--border)',
+        borderRadius: '16px', padding: '8px'
+    },
+
+    input: {
+        flex: 1, background: 'transparent', border: 'none', color: '#fff',
+        fontSize: '1rem', padding: '12px 16px', resize: 'none', outline: 'none',
+        fontFamily: 'var(--font-sans)', maxHeight: '100px'
+    },
+
     sendBtn: {
-        width: '44px', height: '44px', borderRadius: '10px', border: 'none',
-        background: 'linear-gradient(135deg, #8b5cf6, #ec4899)',
-        color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        cursor: 'pointer', flexShrink: 0, transition: 'opacity 0.15s',
-    },
+        width: '44px', height: '44px', borderRadius: '12px',
+        background: 'linear-gradient(135deg, var(--primary), var(--secondary))',
+        border: 'none', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
+        transition: 'all 0.2s'
+    }
 };

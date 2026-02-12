@@ -1,26 +1,284 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
 
 :root {
-  --bg-primary: #0f1115;
-  --bg-secondary: #161820;
-  --bg-card: #22252e;
-  --bg-hover: #2d303b;
+  /* Cores Base - Slate Dark */
+  --bg-primary: #020617;
+  /* slate-950 */
+  --bg-secondary: #0f172a;
+  /* slate-900 */
+  --bg-card: rgba(15, 23, 42, 0.6);
+  /* slate-900 com opacidade */
 
+  /* Cores Brand - Andreza Style */
   --primary: #8b5cf6;
-  /* Roxo vibrante */
+  /* violet-500 */
+  --primary-dark: #7c3aed;
+  /* violet-600 */
   --primary-glow: rgba(139, 92, 246, 0.5);
-  --secondary: #ec4899;
-  /* Rosa vibrante */
 
-  --text-primary: #ffffff;
+  --secondary: #e879f9;
+  /* fuchsia-400 */
+  --secondary-dark: #d946ef;
+  /* fuchsia-500 */
+
+  /* Textos */
+  --text-primary: #f1f5f9;
+  /* slate-100 */
   --text-secondary: #94a3b8;
+  /* slate-400 */
   --text-muted: #64748b;
+  /* slate-500 */
 
-  --border: #2d303b;
-  --glass: rgba(30, 32, 40, 0.7);
-  --glass-border: rgba(255, 255, 255, 0.05);
+  /* Bordas e Vidro */
+  --border: rgba(255, 255, 255, 0.1);
+  --glass: rgba(15, 23, 42, 0.7);
+  --glass-border: rgba(255, 255, 255, 0.1);
 
-  --font-sans: 'Inter', sans-serif;
+  /* Fontes */
+  --font-sans: 'Poppins', sans-serif;
+
+  /* Status */
+  --success: #34d399;
+  /* emerald-400 */
+  --error: #f87171;
+  /* red-400 */
+  --warning: #fbbf24;
+  /* amber-400 */
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  /* Background Imagem Fixa com Overlay */
+  /* Substitua a URL abaixo pela foto da Andreza quando tiver, por enquanto um dark abstract */
+  background-image:
+    linear-gradient(rgba(2, 6, 23, 0.85), rgba(2, 6, 23, 0.95)),
+    url('https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=2564&auto=format&fit=crop');
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Scrollbar Premium */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(139, 92, 246, 0.3);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary);
+}
+
+/* Utilitários de Vidro (Glassmorphism) - Design System */
+.glass-panel,
+.card,
+.glass-card {
+  background: var(--bg-card);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* Títulos com Gradiente */
+h1,
+.text-gradient {
+  background: linear-gradient(to right, #c4b5fd, #e879f9);
+  /* violet-300 to fuchsia-400 */
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  font-weight: 700;
+}
+
+/* Botões Modernos */
+.btn-primary {
+  background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+  color: white;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+}
+
+.btn-primary:hover {
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.6);
+  transform: translateY(-2px);
+  filter: brightness(1.1);
+}
+
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  padding: 12px 24px;
+  border-radius: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--text-secondary);
+}
+
+/* Inputs Modernos */
+input,
+textarea,
+select {
+  background: rgba(15, 23, 42, 0.6) !important;
+  border: 1px solid var(--border) !important;
+  color: white !important;
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-family: var(--font-sans);
+  transition: all 0.2s;
+  width: 100%;
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  outline: none;
+  border-color: var(--primary) !important;
+  box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+}
+
+/* Link padrão */
+a {
+  color: var(--primary);
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s;
+}
+
+a:hover {
+  color: var(--secondary);
+}
+
+/* Animações */
+.animate-fade-in {
+  animation: fadeIn 0.5s ease-out;
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+/* Login Page Específico */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  padding: 40px;
+  /* Glassmorphism forte */
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 24px;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.login-header h1 {
+  font-size: 2rem;
+  margin-bottom: 8px;
+}
+
+.logo-icon {
+  margin: 0 auto 24px auto;
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 10px 30px rgba(139, 92, 246, 0.4);
+}
+
+.error-msg {
+  color: var(--error);
+  margin-bottom: 15px;
+  font-size: 0.9rem;
+  text-align: center;
+  padding: 12px;
+  background: rgba(248, 113, 113, 0.1);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+  border-radius: 12px;
+}
+
+/* Sidebar e Layout */
+.sidebar {
+  background: rgba(15, 23, 42, 0.85);
+  /* Mais escuro para contraste */
+  backdrop-filter: blur(20px);
+  border-right: 1px solid var(--border);
+}
+
+.layout-content {
+  background: transparent;
+  /* Deixa o background do body aparecer */
 }
 
 * {
