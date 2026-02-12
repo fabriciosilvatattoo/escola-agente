@@ -294,16 +294,21 @@ app.post('/api/chat', async (req, res) => {
 // ============================================
 // CHAT - STREAMING (SSE)
 // ============================================
+// ============================================
+// CHAT - STREAMING (SSE) - CORRIGIDO
+// ============================================
 app.post('/api/chat/stream', async (req, res) => {
   res.setHeader('Content-Type', 'text/event-stream');
   res.setHeader('Cache-Control', 'no-cache');
   res.setHeader('Connection', 'keep-alive');
-  res.setHeader('X-Accel-Buffering', 'no'); // Desabilita buffering no nginx/traefik
+  res.setHeader('X-Accel-Buffering', 'no');
 
   try {
     const { message, history = [] } = req.body;
+    console.log('🤖 Iniciando chat stream para:', message);
+
     const messages = [
-      { role: 'system', content: 'Você é um tutor inteligente da Escola NEXUS, especialista em Tatuagem. Ajude os alunos com dúvidas técnicas, artísticas e sobre o curso. Seja encorajador, direto e conciso. Responda em português.' },
+      { role: 'system', content: 'Você é um tutor inteligente da Escola NEXUS, especialista em Tatuagem. Ajude os alunos com dúvidas técnicas, artísticas e sobre o curso. Seja encorajador, direto, conciso e use emojis moderadamente. Responda sempre em português.' },
       ...history.slice(-6),
       { role: 'user', content: message }
     ];
@@ -318,29 +323,42 @@ app.post('/api/chat/stream', async (req, res) => {
     );
 
     response.data.on('data', (chunk) => {
-      const text = chunk.toString();
-      // Reenvia cada linha do stream diretamente pro cliente
-      const lines = text.split('\n');
+      const lines = chunk.toString().split('\n');
       for (const line of lines) {
-        if (line.trim()) {
-          res.write(line + '\n');
+        if (line.trim().startsWith('data:')) {
+          const dataStr = line.replace('data: ', '').trim();
+          if (dataStr === '[DONE]') {
+            res.write('data: [DONE]\n\n');
+            return;
+          }
+          try {
+            const data = JSON.parse(dataStr);
+            const content = data.choices[0]?.delta?.content || '';
+            if (content) {
+              // Envia apenas o conteúdo num formato JSON simples
+              res.write(`data: ${JSON.stringify({ content })}\n\n`);
+            }
+          } catch (e) {
+            // Ignora linhas que não são JSON válido
+          }
         }
       }
     });
 
     response.data.on('end', () => {
-      res.write('data: [DONE]\n\n');
       res.end();
     });
 
     response.data.on('error', (err) => {
       console.error('Stream error:', err.message);
-      res.write(`data: {"error": "Stream interrompido"}\n\n`);
+      res.write(`data: ${JSON.stringify({ error: "Erro no stream da IA" })}\n\n`);
       res.end();
     });
+
   } catch (error) {
-    console.error('Chat stream error:', error.message);
-    res.write(`data: {"error": "Erro ao iniciar stream"}\n\n`);
+    console.error('Chat stream setup error:', error.message);
+    if (error.response) console.error('API Error:', error.response.data);
+    res.write(`data: ${JSON.stringify({ error: "Falha ao conectar com o cérebro da IA" })}\n\n`);
     res.end();
   }
 });

@@ -26,46 +26,53 @@ export default function Feed() {
         }
     ];
 
-    const [posts, setPosts] = useState(mockPosts);
+    const [posts, setPosts] = useState([]);
     const [newPost, setNewPost] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
 
-    // useEffect(() => { fetchPosts(); }, []);
+    useEffect(() => {
+        fetchPosts();
+    }, []);
 
-    // const fetchPosts = () => {
-    //     setLoading(true);
-    //     fetch('/api/feed')
-    //         .then(res => res.json())
-    //         .then(data => { setPosts(Array.isArray(data) ? data : []); setLoading(false); })
-    //         .catch(() => setLoading(false));
-    // };
+    const fetchPosts = () => {
+        setLoading(true);
+        fetch('/api/feed')
+            .then(res => res.json())
+            .then(data => {
+                setPosts(Array.isArray(data) ? data : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Erro ao carregar feed:", err);
+                setPosts([]);
+                setLoading(false);
+            });
+    };
 
     const handlePost = async () => {
         if (!newPost.trim()) return;
 
-        // Mock post local
-        const post = {
-            id: Date.now(),
-            author_name: user?.name || 'Eu',
-            role: 'Aluno',
-            content: newPost,
-            likes_count: 0,
-            created_at: new Date().toISOString()
-        };
-
-        setPosts([post, ...posts]);
-        setNewPost('');
-
-        /* 
         try {
             const res = await fetch('/api/posts', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
                 body: JSON.stringify({ content: newPost }),
             });
-            ...
-        } 
-        */
+
+            if (res.ok) {
+                const createdPost = await res.json();
+                setPosts([createdPost, ...posts]);
+                setNewPost('');
+            } else {
+                alert('Erro ao publicar');
+            }
+        } catch (error) {
+            console.error('Erro no post:', error);
+            alert('Falha na conexão');
+        }
     };
 
     if (loading) return <div className="loader">Carregando comunidade...</div>;

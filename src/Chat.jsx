@@ -25,26 +25,64 @@ export default function Chat() {
         setInput('');
         setStreaming(true);
 
-        // Mock response
-        setMessages(prev => [...prev, { role: 'assistant', content: '...' }]); // Placeholder
+        // Placeholder para a resposta da IA
+        setMessages(prev => [...prev, { role: 'assistant', content: '' }]);
 
-        // Simula delay de rede e streaming
-        setTimeout(() => {
-            const mockResponse = "Essa é uma resposta simulada do Tutor IA. Em produção, isso conectaria ao GLM-4.7 para analisar sua dúvida sobre tatuagem com base no conteúdo do curso. 🎨";
-            let i = 0;
-            const interval = setInterval(() => {
-                setMessages(prev => {
-                    const newMsgs = [...prev];
-                    newMsgs[newMsgs.length - 1] = { role: 'assistant', content: mockResponse.slice(0, i + 1) };
-                    return newMsgs;
-                });
-                i++;
-                if (i === mockResponse.length) {
-                    clearInterval(interval);
-                    setStreaming(false);
+        try {
+            const response = await fetch('/api/chat/stream', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}` // Garante auth se precisar
+                },
+                body: JSON.stringify({ message: userMsg.content, history: messages })
+            });
+
+            if (!response.ok) throw new Error('Erro na conexão com o sábio NEXUS');
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiResponse = '';
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n');
+
+                for (const line of lines) {
+                    if (line.trim().startsWith('data:')) {
+                        const dataStr = line.replace('data: ', '').trim();
+                        if (dataStr === '[DONE]') break;
+
+                        try {
+                            const data = JSON.parse(dataStr);
+                            if (data.content) {
+                                aiResponse += data.content;
+                                setMessages(prev => {
+                                    const newMsgs = [...prev];
+                                    newMsgs[newMsgs.length - 1] = { role: 'assistant', content: aiResponse };
+                                    return newMsgs;
+                                });
+                            }
+                        } catch (e) {
+                            console.error('Erro de parse no stream', e);
+                        }
+                    }
                 }
-            }, 30);
-        }, 1000);
+            }
+
+        } catch (error) {
+            console.error('Chat error:', error);
+            setMessages(prev => {
+                const newMsgs = [...prev];
+                newMsgs[newMsgs.length - 1] = { role: 'assistant', content: '⚠️ Ocorreu um erro ao consultar a IA. Tente novamente.' };
+                return newMsgs;
+            });
+        } finally {
+            setStreaming(false);
+        }
     };
 
     const handleKeyDown = (e) => {

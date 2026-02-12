@@ -1,0 +1,29 @@
+version: '3'
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - DB_HOST=postgres
+      - DB_USER=postgres
+      - DB_PASSWORD=devpass
+      - DB_NAME=escola
+      - JWT_SECRET=dev-secret
+      - GLM_API_KEY=3426673eebda4070a78bf8bbbf53509d.m87S46cq1QO6P8Qj
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=devpass
+      - POSTGRES_DB=escola
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+volumes:
+  pgdata:

@@ -11,18 +11,22 @@ function Modules() {
         { id: 3, title: 'Colorimetria Avançada', description: 'Teoria das cores aplicada à pele.', cover_image: 'https://images.unsplash.com/photo-1525909002-1b05e0c869d8?auto=format&fit=crop&q=80&w=600' }
     ];
 
-    const [modules, setModules] = useState(mockModules);
-    const [loading, setLoading] = useState(false); // Mock loading false for preview
+    const [modules, setModules] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // useEffect(() => {
-    //     fetch('/api/modules')
-    //         .then(res => res.json())
-    //         .then(data => {
-    //             setModules(data);
-    //             setLoading(false);
-    //         })
-    //         .catch(err => setLoading(false));
-    // }, []);
+    useEffect(() => {
+        setLoading(true);
+        fetch('/api/modules')
+            .then(res => res.json())
+            .then(data => {
+                setModules(Array.isArray(data) ? data : []);
+                setLoading(false);
+            })
+            .catch(err => {
+                console.error("Erro ao carregar módulos:", err);
+                setLoading(false);
+            });
+    }, []);
 
     if (loading) return <div className="loader">Carregando seus cursos...</div>;
 
