@@ -1,51 +1,35 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { AuthProvider, useAuth } from './AuthContext';
-import Login from './Login';
-import Register from './Register';
-import Chat from './Chat';
-import Layout from './Layout';
-import Modules from './Modules';
-import Lessons from './Lessons';
-import LessonPlayer from './LessonPlayer';
-import Feed from './Feed';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import Sidebar from './layouts/Sidebar.jsx';
+import Modules from './pages/Modules.jsx';
+import Feed from './pages/Feed.jsx';
+import Chat from './pages/Chat.jsx';
+// Login e Auth virão depois. Foco no Core.
 
-function ProtectedRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return null;
-  return isAuthenticated ? children : <Navigate to="/login" replace />;
-}
+function Layout({ children }) {
+    return (
+        <div className="flex min-h-screen bg-slate-950 text-slate-100 font-sans antialiased overflow-hidden">
+            {/* Sidebar Fixa à Esquerda */}
+            <Sidebar className="w-20 lg:w-64 flex-shrink-0 border-r border-slate-800 bg-slate-900/50 backdrop-blur-xl" />
 
-function PublicRoute({ children }) {
-  const { isAuthenticated, loading } = useAuth();
-  if (loading) return null;
-  return isAuthenticated ? <Navigate to="/modules" replace /> : children;
-}
-
-function AppRoutes() {
-  return (
-    <Routes>
-      <Route path="/login" element={<PublicRoute><Login /></PublicRoute>} />
-      <Route path="/register" element={<PublicRoute><Register /></PublicRoute>} />
-
-      <Route path="/" element={<ProtectedRoute><Layout /></ProtectedRoute>}>
-        <Route index element={<Navigate to="/modules" />} />
-        <Route path="dashboard" element={<Navigate to="/modules" />} />
-        <Route path="modules" element={<Modules />} />
-        <Route path="modules/:id" element={<Lessons />} />
-        <Route path="lessons/:id" element={<LessonPlayer />} />
-        <Route path="feed" element={<Feed />} />
-        <Route path="chat" element={<Chat />} />
-      </Route>
-    </Routes>
-  );
+            {/* Área de Conteúdo Scrollável */}
+            <main className="flex-1 overflow-y-auto relative z-10">
+                <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+                    {children}
+                </div>
+            </main>
+        </div>
+    );
 }
 
 export default function App() {
-  return (
-    <BrowserRouter>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </BrowserRouter>
-  );
+    return (
+        <Layout>
+            <Routes>
+                <Route path="/" element={<Navigate to="/modules" replace />} />
+                <Route path="/modules" element={<Modules />} />
+                <Route path="/community" element={<Feed />} />
+                <Route path="/tutor" element={<Chat />} />
+            </Routes>
+        </Layout>
+    );
 }
