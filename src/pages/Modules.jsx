@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { PlayCircle, Clock, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 export default function Modules() {
     const [data, setData] = useState([
@@ -85,10 +86,13 @@ export default function Modules() {
                                     </div>
                                 </div>
 
-                                <button className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 group-hover:translate-y-0 translate-y-0">
+                                <Link
+                                    to={`/modules/${item.id}/lessons/1`}
+                                    className="w-full py-3 bg-violet-600 hover:bg-violet-500 text-white font-medium rounded-xl transition-colors flex items-center justify-center gap-2 group-hover:translate-y-0 translate-y-0"
+                                >
                                     <PlayCircle size={18} fill="currentColor" className="text-white/20" />
                                     <span>Continuar Aula</span>
-                                </button>
+                                </Link>
                             </div>
                         </div>
                     </div>
